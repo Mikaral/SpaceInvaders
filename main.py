@@ -86,6 +86,10 @@ def render_game_over():
     game_over = game_over_font.render("Game Over", True, (255, 255, 255))
     screen.blit(game_over, (216, 236))
 
+def render_win():
+    win = game_over_font.render("You win!", True, (255, 255, 255))
+    screen.blit(win, (256, 236))
+
 
 def fire_bullet(x, y):
     global bulletState
@@ -157,6 +161,9 @@ while running:
     elif bulletState:
         fire_bullet(bulletX, bulletY)
         bulletY -= bulletDeltaMovement
+
+    if enemiesNumber == 0:
+        render_win()
 
     # Drawing Player Model
     player(playerX, playerY)
