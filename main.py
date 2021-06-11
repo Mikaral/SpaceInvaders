@@ -1,13 +1,20 @@
 import math
 import random
 
+import numpy
 import pygame
+from pygame import mixer
 
 # Initialize pygame
 pygame.init()
 
 # Create the screen
 screen = pygame.display.set_mode((800, 600))
+
+# Background music
+mixer.music.load('background.wav')
+mixer.music.play(-1)
+mixer.music.set_volume(0.3)
 
 # Title and Icon
 pygame.display.set_caption("Space Invaders")
@@ -17,6 +24,7 @@ pygame.display.set_icon(icon)
 # Score
 score = 0
 font = pygame.font.Font('Minecraft.ttf', 32)
+game_over_font = pygame.font.Font('Minecraft.ttf', 64)
 textX = 10
 textY = 10
 
@@ -30,8 +38,9 @@ enemySprites = ['alien.png', 'alien2.png', 'alien3.png', 'alien4.png']
 enemyImg = []
 enemyX = []
 enemyY = []
-enemyDeltaMovement = [0.2, 0.2, 0.2]
-enemiesNumber = 3
+enemiesNumber = 6
+enemyDeltaMovement = numpy.empty([enemiesNumber])
+enemyDeltaMovement.fill(0.2)
 
 for i in range(enemiesNumber):
     enemyImg.append(pygame.image.load(enemySprites[random.randint(0, 3)]))
@@ -50,7 +59,7 @@ bulletState = False
 # Distance operation
 def is_collision(enemyX, enemyY, bulletX, bulletY):
     distance = math.sqrt(math.pow(enemyX - bulletX, 2) + math.pow(enemyY - bulletY, 2))
-    return distance < 64
+    return distance < 50
 
 
 def player(x, y):
@@ -61,9 +70,21 @@ def enemy(x, y, i):
     screen.blit(enemyImg[i], (x, y))
 
 
+def kill_enemy(i):
+    enemyX.pop(i)
+    enemyY.pop(i)
+    enemyImg.pop(i)
+    numpy.delete(enemyDeltaMovement, i)
+
+
 def show_score(x, y):
     score_render = font.render("Score: " + str(score), True, (255, 255, 255))
     screen.blit(score_render, (x, y))
+
+
+def render_game_over():
+    game_over = game_over_font.render("Game Over", True, (255, 255, 255))
+    screen.blit(game_over, (216, 236))
 
 
 def fire_bullet(x, y):
@@ -89,11 +110,20 @@ while running:
     if pressed[pygame.K_SPACE] and not bulletState:
         fire_bullet(playerX, bulletY)
         bulletX = playerX
+        bullet_sound = mixer.Sound('laser.wav')
+        bullet_sound.set_volume(0.2)
+        bullet_sound.play()
 
     # Movement of the Enemy
     i = 0
     enemyDead = False
     while i < enemiesNumber and not enemyDead:
+        # Game Over
+        if enemyY[i] > 400:
+            for j in range(enemiesNumber):
+                enemyY[j] = 2000
+                render_game_over()
+
         if enemyX[i] >= 736:
             enemyDeltaMovement[i] = -0.2
             enemyY[i] += 10
@@ -107,14 +137,11 @@ while running:
         # Collision Detection
         collision = is_collision(enemyX[i], enemyY[i], bulletX, bulletY)
         if collision:
+            score += 1
             enemiesNumber -= 1
             bulletY = 480
             bulletState = False
-            score += 1
-            enemyX.pop(i)
-            enemyY.pop(i)
-            enemyImg.pop(i)
-            enemyDeltaMovement.pop(i)
+            kill_enemy(i)
             enemyDead = True
 
         i += 1
